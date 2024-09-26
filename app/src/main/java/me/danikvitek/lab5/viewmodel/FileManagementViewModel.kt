@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import me.danikvitek.lab5.R
 import me.danikvitek.lab5.service.ChemEngineService
 import java.io.File
 import java.io.FileNotFoundException
@@ -80,7 +81,8 @@ class FileManagementViewModel @Inject constructor(
     fun downloadFile() {
         viewModelScope.launch(Dispatchers.IO) {
             if (!isOnline()) {
-                _state.value = State.Error("No internet connection")
+                _state.value =
+                    State.Error(appContext.getString(R.string.error_no_internet_connection))
                 return@launch
             }
 
@@ -88,12 +90,14 @@ class FileManagementViewModel @Inject constructor(
 
             val response = chemEngineService.downloadPdf()
             if (!response.isSuccessful) {
-                _state.value = State.Error("Server response error")
+                _state.value =
+                    State.Error(appContext.getString(R.string.error_server_response_error))
                 return@launch
             }
 
             val body = response.body() ?: run {
-                _state.value = State.Error("No server response body")
+                _state.value =
+                    State.Error(appContext.getString(R.string.error_no_server_response_body))
                 return@launch
             }
             val contentLength = body.contentLength()
@@ -102,11 +106,12 @@ class FileManagementViewModel @Inject constructor(
                     parentFile?.takeIf { !isDirectory }?.mkdirs()
                     outputStream()
                 } catch (e: FileNotFoundException) {
-                    _state.value = State.Error("Error creating file")
+                    _state.value = State.Error(appContext.getString(R.string.error_creating_file))
                     Log.e(TAG, "Error creating file", e)
                     return@launch
                 } catch (e: SecurityException) {
-                    _state.value = State.Error("No rights to create file")
+                    _state.value =
+                        State.Error(appContext.getString(R.string.error_no_rights_to_create_file))
                     Log.e(TAG, "Error creating file", e)
                     return@launch
                 }

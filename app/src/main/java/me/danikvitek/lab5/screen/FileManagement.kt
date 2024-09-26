@@ -14,7 +14,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,12 +25,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityOptionsCompat
 import androidx.core.content.FileProvider
+import me.danikvitek.lab5.R
 import me.danikvitek.lab5.ui.theme.Lab5Theme
 import me.danikvitek.lab5.viewmodel.FileManagementViewModel
 import me.danikvitek.lab5.viewmodel.State
@@ -48,7 +52,6 @@ fun FileManagement(
     FileManagement(
         state = state,
         onClickOpen = {
-//            (context as ComponentActivity).registerForActivityResult(Act)
             runCatching {
                 launcher.launch(
                     input = viewModel.file().run {
@@ -109,7 +112,7 @@ private fun FileManagement(
             onClick = onClickOpen,
             enabled = state is State.FileReady,
         ) {
-            Text(text = "Open file")
+            Text(text = stringResource(R.string.open_file))
         }
         Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
@@ -120,7 +123,12 @@ private fun FileManagement(
                 enabled = state is State.NoFile || state is State.Error,
             ) {
                 Text(
-                    text = if (state is State.Downloading) "Downloading..." else "Download",
+                    text = stringResource(
+                        if (state is State.Downloading)
+                            R.string.downloading
+                        else
+                            R.string.download
+                    ),
                 )
             }
             if (state is State.Downloading) {
@@ -132,8 +140,12 @@ private fun FileManagement(
         Button(
             onClick = onClickDelete,
             enabled = state is State.FileReady,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+            ),
         ) {
-            Text(text = "Delete file")
+            Text(text = stringResource(R.string.delete_file))
         }
     }
 }
@@ -142,8 +154,8 @@ private class ViewPdf : ActivityResultContract<Uri, Unit>() {
     override fun createIntent(context: Context, input: Uri): Intent =
         Intent(Intent.ACTION_VIEW).apply {
             setDataAndType(input, "application/pdf")
-            setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        }.let { Intent.createChooser(it, "Open PDF") }
+            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+        }.let { Intent.createChooser(it, context.getString(R.string.open_pdf)) }
 
     override fun getSynchronousResult(context: Context, input: Uri): SynchronousResult<Unit>? = null
 

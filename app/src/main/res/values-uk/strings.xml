@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="download">Завантажити</string>
+    <string name="downloading">Завантажується</string>
+    <string name="open_file">ВІдкрити файл</string>
+    <string name="delete_file">Видалити файл</string>
+    <string name="open_pdf">Відкрити PDF</string>
+    <string name="error_no_internet_connection">Нема Інтернет-зв\'язку</string>
+    <string name="error_server_response_error">Помилка відповіді сервера</string>
+    <string name="error_no_server_response_body">Нема тіла відповіді сервера</string>
+    <string name="error_creating_file">Помилка створення файлу</string>
+    <string name="error_no_rights_to_create_file">Не прав на створення файлу</string>
+</resources>

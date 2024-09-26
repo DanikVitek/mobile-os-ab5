@@ -1,3 +1,13 @@
 <resources>
-    <string name="app_name">Lab5</string>
+    <string name="app_name" translatable="false">Lab5</string>
+    <string name="download">Download</string>
+    <string name="downloading">Downloading</string>
+    <string name="open_file">Open file</string>
+    <string name="delete_file">Delete file</string>
+    <string name="open_pdf">Open PDF</string>
+    <string name="error_no_internet_connection">No internet connection</string>
+    <string name="error_server_response_error">Server response error</string>
+    <string name="error_no_server_response_body">No server response body</string>
+    <string name="error_creating_file">Error creating file</string>
+    <string name="error_no_rights_to_create_file">No rights to create file</string>
 </resources>
