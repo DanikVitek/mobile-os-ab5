@@ -27,7 +27,6 @@ class MainActivity : ComponentActivity() {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     val viewModel: FileManagementViewModel by viewModels()
                     FileManagement(
-                        originActivity = this,
                         viewModel = viewModel,
                         modifier = Modifier.padding(innerPadding),
                     )

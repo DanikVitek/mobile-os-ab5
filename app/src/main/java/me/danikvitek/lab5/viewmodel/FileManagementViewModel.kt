@@ -1,13 +1,11 @@
 package me.danikvitek.lab5.viewmodel
 
 import android.content.Context
-import android.content.Intent
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
-import android.provider.DocumentsContract
+import android.os.Environment
 import android.util.Log
-import androidx.activity.ComponentActivity
-import androidx.core.app.ActivityCompat.startActivityForResult
+import androidx.annotation.FloatRange
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -19,15 +17,15 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import me.danikvitek.lab5.service.ChemEngineService
-import java.io.BufferedInputStream
 import java.io.File
+import java.io.FileNotFoundException
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.seconds
 
 sealed interface State {
     data object NoFile : State
     data object FileReady : State
-    data class Downloading(val progress: Float?) : State
+    data class Downloading(@FloatRange(from = 0.0, to = 1.0) val progress: Float?) : State
     data class Error(val error: String) : State
 }
 
@@ -44,31 +42,21 @@ class FileManagementViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             while (true) {
                 if (_state.value !is State.Downloading) {
-                    _state.value = file()?.let { State.FileReady } ?: State.NoFile
+                    _state.value =
+                        file().takeIf { it.exists() }?.let { State.FileReady } ?: State.NoFile
                 }
                 delay(RETRY_RATE)
             }
         }
     }
 
-    fun openFile(originActivity: ComponentActivity) {
-        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-            addCategory(Intent.CATEGORY_OPENABLE)
-            type = "application/pdf"
-            putExtra(
-                DocumentsContract.EXTRA_INITIAL_URI,
-                appContext.getFileStreamPath(FILE_NAME).toURI(),
-            )
-        }
-        startActivityForResult(originActivity, intent, 1, null)
-    }
-
-    private fun file(): File? =
-        appContext.getFileStreamPath(FILE_NAME).takeIf { it.exists() }.also {
-            if (it == null) {
-                _state.value = State.NoFile
-            }
-        }
+    /**
+     * @return the file path of the file or null if the external storage is not available
+     */
+    fun file(): File =
+        Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS)
+            .resolve(appContext.packageName)
+            .resolve(FILE_NAME)
 
     private fun isOnline(): Boolean {
         val connectivityManager =
@@ -100,27 +88,43 @@ class FileManagementViewModel @Inject constructor(
 
             val response = chemEngineService.downloadPdf()
             if (!response.isSuccessful) {
-                _state.value = State.Error("Error downloading file")
+                _state.value = State.Error("Server response error")
                 return@launch
             }
 
             val body = response.body() ?: run {
-                _state.value = State.Error("Error downloading file")
+                _state.value = State.Error("No server response body")
                 return@launch
             }
             val contentLength = body.contentLength()
-            appContext.openFileOutput(FILE_NAME, Context.MODE_PRIVATE).use { outputStream ->
-                BufferedInputStream(body.byteStream()).use { inputStream ->
-                    val buffer = ByteArray(1024)
-                    var len: Int
+            file().run {
+                try {
+                    parentFile?.takeIf { !isDirectory }?.mkdirs()
+                    outputStream()
+                } catch (e: FileNotFoundException) {
+                    _state.value = State.Error("Error creating file")
+                    Log.e(TAG, "Error creating file", e)
+                    return@launch
+                } catch (e: SecurityException) {
+                    _state.value = State.Error("No rights to create file")
+                    Log.e(TAG, "Error creating file", e)
+                    return@launch
+                }
+            }.use { outputStream ->
+                body.byteStream().use { inputStream ->
+                    val buffer = ByteArray(4096)
                     var total = 0L
                     while (true) {
-                        len = inputStream.read(buffer)
+                        val len = inputStream.read(buffer)
                         if (len == -1) break
+
                         outputStream.write(buffer, 0, len)
+
                         if (contentLength > -1) {
                             total += len
-                            _state.value = State.Downloading(total.toFloat() / contentLength)
+                            _state.value = State.Downloading(
+                                if (contentLength == 0L) 1f else (total.toFloat() / contentLength)
+                            )
                         }
                     }
                 }
@@ -131,7 +135,7 @@ class FileManagementViewModel @Inject constructor(
     }
 
     fun deleteFile() {
-        appContext.deleteFile(FILE_NAME)
+        file().takeIf { it.isFile }?.delete()
         _state.value = State.NoFile
     }
 

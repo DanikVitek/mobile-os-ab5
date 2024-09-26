@@ -1,10 +1,12 @@
 package me.danikvitek.lab5.screen
 
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.provider.DocumentsContract
-import androidx.activity.ComponentActivity
+import android.util.Log
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -20,25 +22,70 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
+import androidx.core.app.ActivityOptionsCompat
+import androidx.core.content.FileProvider
 import me.danikvitek.lab5.ui.theme.Lab5Theme
 import me.danikvitek.lab5.viewmodel.FileManagementViewModel
 import me.danikvitek.lab5.viewmodel.State
 
+private const val TAG = "FileManagement#onClickOpen"
+
 @Composable
 fun FileManagement(
-    originActivity: ComponentActivity,
     viewModel: FileManagementViewModel,
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsState()
+    val launcher = rememberLauncherForActivityResult(ViewPdf()) {}
+
+    val context = LocalContext.current
 
     FileManagement(
         state = state,
-        onClickOpen = { viewModel.openFile(originActivity) },
+        onClickOpen = {
+//            (context as ComponentActivity).registerForActivityResult(Act)
+            runCatching {
+                launcher.launch(
+                    input = viewModel.file().run {
+                        FileProvider.getUriForFile(
+                            context,
+                            "${context.packageName}.provider",
+                            this
+                        ).also { Log.d(TAG, "File URI: $it") }
+                    },
+                    options = ActivityOptionsCompat.makeBasic(),
+                )
+            }.onFailure { th ->
+                when (th) {
+                    is ActivityNotFoundException -> {
+                        Toast.makeText(
+                            context,
+                            "No application found which can open the file",
+                            Toast.LENGTH_LONG
+                        ).show()
+                        Log.i(
+                            "FileManagement#onClickOpen",
+                            "No application found which can open the file",
+                            th
+                        )
+                    }
+
+                    else -> {
+                        Toast.makeText(
+                            context,
+                            "Error opening file (${th::class.simpleName})",
+                            Toast.LENGTH_LONG
+                        ).show()
+                        Log.e("FileManagement#onClickOpen", "Error opening file", th)
+                    }
+                }
+            }
+        },
         onClickDownload = { viewModel.downloadFile() },
         onClickDelete = { viewModel.deleteFile() },
         modifier = modifier,
@@ -53,8 +100,6 @@ private fun FileManagement(
     onClickDelete: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-//    val launcher = rememberLauncherForActivityResult(OpenPdf()) {}
-
     Column(
         modifier = modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -62,12 +107,6 @@ private fun FileManagement(
     ) {
         Button(
             onClick = onClickOpen,
-            /*{
-                launcher.launch(
-                    (state as State.FileReady).file.toUri(),
-                    options = ActivityOptionsCompat.makeBasic(),
-                )
-            }*/
             enabled = state is State.FileReady,
         ) {
             Text(text = "Open file")
@@ -99,19 +138,16 @@ private fun FileManagement(
     }
 }
 
-private class OpenPdf : ActivityResultContract<Uri, Uri?>() {
-    override fun createIntent(context: Context, input: Uri) =
-        Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-            addCategory(Intent.CATEGORY_OPENABLE)
-            type = "application/pdf"
-            putExtra(DocumentsContract.EXTRA_INITIAL_URI, input)
-        }
+private class ViewPdf : ActivityResultContract<Uri, Unit>() {
+    override fun createIntent(context: Context, input: Uri): Intent =
+        Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(input, "application/pdf")
+            setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }.let { Intent.createChooser(it, "Open PDF") }
 
-    override fun getSynchronousResult(context: Context, input: Uri) = null
+    override fun getSynchronousResult(context: Context, input: Uri): SynchronousResult<Unit>? = null
 
-    override fun parseResult(resultCode: Int, intent: Intent?): Uri? {
-        TODO("Not yet implemented")
-    }
+    override fun parseResult(resultCode: Int, intent: Intent?) = Unit
 }
 
 @Preview
@@ -135,6 +171,7 @@ private fun PreviewFileManagement(
 private class StatePreviewProvider : PreviewParameterProvider<State> {
     override val values: Sequence<State> = sequenceOf(
         State.NoFile,
+        State.Downloading(null),
         State.Downloading(0f),
         State.Downloading(0.5f),
         State.FileReady,
