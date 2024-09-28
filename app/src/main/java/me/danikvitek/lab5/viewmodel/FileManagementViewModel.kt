@@ -104,7 +104,7 @@ class FileManagementViewModel @Inject constructor(
             val contentLength = body.contentLength()
             file().run {
                 try {
-                    parentFile?.takeIf { !isDirectory }?.mkdirs()
+                    parentFile?.takeIf { !it.isDirectory }?.mkdirs()
                     outputStream()
                 } catch (e: FileNotFoundException) {
                     _state.value = State.Error(appContext.getString(R.string.error_creating_file))
