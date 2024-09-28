@@ -148,6 +148,9 @@ private fun FileManagement(
             Text(text = stringResource(R.string.delete_file))
         }
     }
+    if (state is State.Error) {
+        Toast.makeText(LocalContext.current, state.error, Toast.LENGTH_LONG).show()
+    }
 }
 
 private class ViewPdf : ActivityResultContract<Uri, Unit>() {

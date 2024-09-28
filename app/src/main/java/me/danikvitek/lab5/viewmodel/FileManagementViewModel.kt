@@ -89,9 +89,10 @@ class FileManagementViewModel @Inject constructor(
             _state.value = State.Downloading(null)
 
             val response = chemEngineService.downloadPdf()
+            Log.d(TAG, "Status: ${response.code()}")
             if (!response.isSuccessful) {
                 _state.value =
-                    State.Error(appContext.getString(R.string.error_server_response_error))
+                    State.Error(appContext.getString(R.string.error_server_response_error) + ": ${response.code()}")
                 return@launch
             }
 
