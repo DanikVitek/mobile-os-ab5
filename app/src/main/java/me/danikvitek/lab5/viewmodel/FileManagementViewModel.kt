@@ -92,7 +92,7 @@ class FileManagementViewModel @Inject constructor(
             Log.d(TAG, "Status: ${response.code()}")
             if (!response.isSuccessful) {
                 _state.value =
-                    State.Error(appContext.getString(R.string.error_server_response_error) + ": ${response.code()}")
+                    State.Error("${appContext.getString(R.string.error_server_response_error)}: ${response.code()}")
                 return@launch
             }
 

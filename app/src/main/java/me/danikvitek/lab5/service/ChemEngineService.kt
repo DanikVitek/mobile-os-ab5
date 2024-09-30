@@ -8,8 +8,8 @@ import retrofit2.http.Streaming
 
 interface ChemEngineService {
     @Headers("Accept: application/pdf")
-    @GET("article/download/228078/227310/519284")
-//    @GET("article/download/228078/227310/519285")
+//    @GET("article/download/228078/227310/519284")
+    @GET("article/download/228078/227310/519285")
     @Streaming
     suspend fun downloadPdf(): Response<ResponseBody>
 }

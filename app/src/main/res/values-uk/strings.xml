@@ -10,4 +10,8 @@
     <string name="error_no_server_response_body">Нема тіла відповіді сервера</string>
     <string name="error_creating_file">Помилка створення файлу</string>
     <string name="error_no_rights_to_create_file">Не прав на створення файлу</string>
+    <string name="description_title">Опис</string>
+    <string name="description_text">Ви можете завантажити PDF із сайту ChemEngine, використовуючи кнопку \"%1$s\". Після цього, файл може бути відкритий у PDF переглядачі, за допомогою кнопки \"%2$s\", або може бути видалений кнопкою \"%3$s\".</string>
+    <string name="description_dont_show_again">Більше не показувати</string>
+    <string name="description_ok">Ок</string>
 </resources>
